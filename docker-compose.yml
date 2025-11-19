@@ -1,0 +1,69 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: opentrader-dev
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./opentrader_data:/app/data
+    environment:
+      DATABASE_URL: file:/app/data/dev.db
+      ADMIN_PASSWORD: opentrader
+      HOST: 0.0.0.0
+      PORT: 5000
+  monolith:
+    build:
+      context: .
+      dockerfile: pro.Dockerfile
+      args:
+        ADMIN_PASSWORD: opentrader
+        GITHUB_TOKEN: "github_classic_token"
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./opentrader_data:/app/data
+    environment:
+      DATABASE_URL: file:/app/data/dev.db
+      ADMIN_PASSWORD: opentrader
+      PORT: 5000
+  #    depends_on:
+  #      - database
+  #    platform: linux/amd64 # works slow when building on Mac M1
+  processor:
+    build:
+      context: .
+      dockerfile: apps/processor/Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      ADMIN_PASSWORD: opentrader
+  #    depends_on:
+  #      - database
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        ADMIN_PASSWORD: opentrader
+      network: host
+    ports:
+      - "3000:3000"
+    environment:
+      ADMIN_PASSWORD: opentrader
+  #    depends_on:
+  #      - database
+  database:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+volumes:
+  postgres-db:
